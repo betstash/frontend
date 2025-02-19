@@ -47,7 +47,7 @@ interface Match {
 }
 
 // Mock data
-const ongoingMatches = [
+const ongoingMatches: Match[] = [
   {
     id: "m1",
     sport: "cricket",
@@ -64,6 +64,8 @@ const ongoingMatches = [
       },
     },
     startTime: "2025-02-18T14:30:00",
+    maxBetting: 100,
+    currentBettingMembers: 2,
     status: "live",
   },
   {
@@ -82,6 +84,8 @@ const ongoingMatches = [
       },
     },
     startTime: "2025-02-18T18:45:00",
+    maxBetting: 100,
+    currentBettingMembers: 2,
     status: "live",
   },
   {
@@ -100,6 +104,8 @@ const ongoingMatches = [
       },
     },
     startTime: "2025-02-18T17:00:00",
+    maxBetting: 100,
+    currentBettingMembers: 2,
     status: "live",
   },
   {
@@ -118,6 +124,8 @@ const ongoingMatches = [
       },
     },
     startTime: "2025-02-18T20:00:00",
+    maxBetting: 100,
+    currentBettingMembers: 2,
     status: "upcoming",
   },
 ];
@@ -126,33 +134,33 @@ function App() {
   const { connected } = useWallet();
   const [activeTab, setActiveTab] = useState("all");
 
-  const [ongoingMatches, setOngoingMatches] = useState<Match[]>([]);
+  // const [ongoingMatches, setOngoingMatches] = useState<Match[]>([]);
 
-  useEffect(() => {
-    const ws = new WebSocket("ws://localhost:3001");
+  // useEffect(() => {
+  //   const ws = new WebSocket("ws://localhost:3001");
 
-    ws.onopen = () => {
-      console.log("Connected to WebSocket server");
-    };
+  //   ws.onopen = () => {
+  //     console.log("Connected to WebSocket server");
+  //   };
 
-    ws.onmessage = (event) => {
-      const updatedMatch = JSON.parse(event.data);
-      setOngoingMatches((prevMatches) => {
-        const matchExists = prevMatches.find((match) => match.id === updatedMatch.id);
-        return matchExists
-          ? prevMatches.map((match) => (match.id === updatedMatch.id ? updatedMatch : match))
-          : [...prevMatches, updatedMatch];
-      });
-    };
+  //   ws.onmessage = (event) => {
+  //     const updatedMatch = JSON.parse(event.data);
+  //     setOngoingMatches((prevMatches) => {
+  //       const matchExists = prevMatches.find((match) => match.id === updatedMatch.id);
+  //       return matchExists
+  //         ? prevMatches.map((match) => (match.id === updatedMatch.id ? updatedMatch : match))
+  //         : [...prevMatches, updatedMatch];
+  //     });
+  //   };
 
-    ws.onclose = () => {
-      console.log("WebSocket connection closed");
-    };
+  //   ws.onclose = () => {
+  //     console.log("WebSocket connection closed");
+  //   };
 
-    return () => {
-      ws.close();
-    };
-  }, []);
+  //   return () => {
+  //     ws.close();
+  //   };
+  // }, []);
 
   return (
     <>
@@ -177,63 +185,6 @@ function App() {
             />
             <link rel="icon" href="/favicon.ico" />
           </Head>
-
-          {/* Navbar */}
-          <header className="sticky top-0 z-50 border-b border-gray-800 backdrop-blur-md bg-black/60">
-            <div className="container mx-auto flex items-center justify-between h-16 px-4">
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="icon" className="lg:hidden">
-                  <Menu className="h-6 w-6" />
-                </Button>
-                <Link href="/" className="flex items-center space-x-2">
-                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-                    <Trophy className="h-5 w-5 text-white" />
-                  </div>
-                  <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400">
-                    BetStash
-                  </span>
-                </Link>
-              </div>
-
-              <nav className="hidden lg:flex space-x-8">
-                <Link
-                  href="/sports"
-                  className="flex items-center text-sm opacity-80 hover:opacity-100 transition-opacity"
-                >
-                  Sports
-                </Link>
-                <Link
-                  href="/live"
-                  className="flex items-center text-sm opacity-80 hover:opacity-100 transition-opacity"
-                >
-                  Live
-                  <Badge className="ml-2 py-0 border-green-500 text-green-500">12</Badge>
-                </Link>
-                <Link
-                  href="/promotions"
-                  className="flex items-center text-sm opacity-80 hover:opacity-100 transition-opacity"
-                >
-                  Promotions
-                </Link>
-                <Link href="/ai-insights" className="flex items-center text-sm font-medium">
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400">
-                    AI Insights
-                  </span>
-                  <Badge className="ml-2 py-0 px-2 bg-gradient-to-r from-purple-500 to-blue-500">New</Badge>
-                </Link>
-              </nav>
-
-              <div className="flex items-center space-x-3">
-                <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
-                  <Bell className="h-5 w-5" />
-                </Button>
-
-                {/* <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"> */}
-                <WalletSelector />
-                {/* </Button> */}
-              </div>
-            </div>
-          </header>
 
           <main className="container mx-auto px-4 py-8">
             {/* Hero Section */}
@@ -336,7 +287,7 @@ function App() {
                               size="sm"
                               className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
                             >
-                              Place Bet
+                              <Link href={`/betting/${match.id}`}>Place Bet</Link>
                             </Button>
                           </div>
                         </CardContent>
