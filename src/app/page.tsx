@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 // import { WalletSelector } from "@/components/WalletSelector";
-import { useWallet } from "@aptos-labs/wallet-adapter-react";
+// import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
 import { ChevronRight, CreditCard, DollarSign, Gamepad2, Trophy } from "lucide-react";
@@ -143,7 +143,7 @@ interface Match {
 // ];
 
 function App() {
-  const { connected } = useWallet();
+  // const { connected } = useWallet();
   const [activeTab, setActiveTab] = useState("all");
 
   const [ongoingMatches, setOngoingMatches] = useState<Match[]>([]);

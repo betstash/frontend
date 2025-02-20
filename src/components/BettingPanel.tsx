@@ -7,6 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Users, Clock, DollarSign, AlertCircle } from "lucide-react";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import axios from "axios";
+// import { depositAPT } from "./aptos";
+import { useWalletClient } from "@thalalabs/surf/hooks";
+import { aptosClient } from "@/utils/aptosClient";
+import { ABI } from "./abi";
 interface Team {
   name: string;
   logo: string;
@@ -49,6 +53,8 @@ const BettingPanel: React.FC<BettingPanelProps> = ({ matchData }) => {
   const [selectedTeam, setSelectedTeam] = useState<"home" | "away" | null>(null);
   const { connected, account } = useWallet();
   const [betAmount, setBetAmount] = useState<string>("");
+  // const { account } = useWallet();
+  const { client } = useWalletClient();
   const [recentBets, setRecentBets] = useState<Bet[]>([
     { user: "Alex Thompson", amount: 50, team: "home", timestamp: new Date() },
     { user: "Sarah Chen", amount: 75, team: "away", timestamp: new Date() },
@@ -83,6 +89,24 @@ const BettingPanel: React.FC<BettingPanelProps> = ({ matchData }) => {
 
       if (response.data.success) {
         console.log("Bet placed successfully on the server:", response.data.match);
+        if (!client || !betAmount) {
+          return;
+        }
+
+        try {
+          const committedTransaction = await client.useABI(ABI).deposit({
+            type_arguments: [],
+            arguments: [Math.pow(10, 8) * Number(betAmount)],
+          });
+          const executedTransaction = await aptosClient().waitForTransaction({
+            transactionHash: committedTransaction.hash,
+          });
+
+          console.log(executedTransaction, "transactions success");
+        } catch (error) {
+          console.error(error);
+        }
+
         setRecentBets([newBet, ...recentBets]);
       } else {
         console.error("Error placing bet:", response.data.error);
