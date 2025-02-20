@@ -6,24 +6,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Users, Clock, DollarSign, AlertCircle } from "lucide-react";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
-
+import axios from "axios";
 interface Team {
   name: string;
   logo: string;
   odds: number;
 }
 
-interface MatchData {
+interface UserBet {
+  address: string;
+  team: "home" | "away"; // The team the user is betting on
+  bettingAmount: number; // The amount the user is betting
+}
+
+interface Match {
   id: string;
-  sport: string;
+  sport: "cricket" | "football" | "baseball";
   teams: {
     home: Team;
     away: Team;
   };
   startTime: string;
+  status: "live" | "upcoming";
   maxBetting: number;
   currentBettingMembers: number;
-  status: "live" | "upcoming";
+  users: UserBet[];
+  score: { home: number; away: number }; // Array of users and their betting details
 }
 
 interface Bet {
@@ -34,7 +42,7 @@ interface Bet {
 }
 
 interface BettingPanelProps {
-  matchData: MatchData;
+  matchData: Match;
 }
 
 const BettingPanel: React.FC<BettingPanelProps> = ({ matchData }) => {
@@ -46,7 +54,7 @@ const BettingPanel: React.FC<BettingPanelProps> = ({ matchData }) => {
     { user: "Sarah Chen", amount: 75, team: "away", timestamp: new Date() },
   ]);
 
-  const handlePlaceBet = () => {
+  const handlePlaceBet = async () => {
     if (!selectedTeam || !betAmount || Number(betAmount) > matchData.maxBetting) return;
 
     const newBet: Bet = {
@@ -65,7 +73,24 @@ const BettingPanel: React.FC<BettingPanelProps> = ({ matchData }) => {
       user: account?.address as string,
     });
 
-    setRecentBets([newBet, ...recentBets]);
+    try {
+      const response = await axios.post("http://localhost:3001/place-bet", {
+        matchId: matchData.id,
+        address: account?.address,
+        bettingAmount: Number(betAmount),
+        team: selectedTeam,
+      });
+
+      if (response.data.success) {
+        console.log("Bet placed successfully on the server:", response.data.match);
+        setRecentBets([newBet, ...recentBets]);
+      } else {
+        console.error("Error placing bet:", response.data.error);
+      }
+    } catch (error) {
+      console.error("Failed to place bet:", error);
+    }
+
     setSelectedTeam(null);
     setBetAmount("");
   };
@@ -142,7 +167,12 @@ const BettingPanel: React.FC<BettingPanelProps> = ({ matchData }) => {
                         </Avatar>
                         <div>
                           <p className="font-medium text-white">{matchData.teams[teamType].name}</p>
-                          <p className="text-sm text-gray-400">Odds: {matchData.teams[teamType].odds}</p>
+                          <div className="flex gap-8">
+                            <p className="text-sm text-gray-400">Odds: {matchData.teams[teamType].odds}</p>
+                            <p className="text-sm text-gray-400">
+                              Score: {teamType === "home" ? matchData.score.home : matchData.score.away}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -198,16 +228,17 @@ const BettingPanel: React.FC<BettingPanelProps> = ({ matchData }) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentBets.map((bet, index) => (
+              {matchData.users.map((bet, index) => (
                 <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50">
                   <div>
-                    <p className="text-white font-medium">{bet.user}</p>
+                    <p className="text-white font-medium">{bet.address}</p>
                     <p className="text-sm text-gray-400">Bet on {matchData.teams[bet.team as "home" | "away"].name}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-white font-medium">${bet.amount}</p>
+                    <p className="text-white font-medium">${bet.bettingAmount}</p>
                     <p className="text-sm text-gray-400">
-                      Potential win: ${(bet.amount * matchData.teams[bet.team as "home" | "away"].odds).toFixed(2)}
+                      Potential win: $
+                      {(bet.bettingAmount * matchData.teams[bet.team as "home" | "away"].odds).toFixed(2)}
                     </p>
                   </div>
                 </div>

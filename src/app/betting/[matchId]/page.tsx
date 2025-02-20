@@ -1,141 +1,85 @@
-// app/betting/[matchId]/page.tsx
 "use client";
-import BettingPanel from "@/components/BettingPanel";
+import React, { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
+import BettingPanel from "@/components/BettingPanel"; // Assuming this is your betting component
 
-// Types
-interface Team {
-  name: string;
-  logo: string;
-  odds: number;
-}
-
-interface MatchData {
-  id: string;
-  sport: string;
-  teams: {
-    home: Team;
-    away: Team;
-  };
-  startTime: string;
-  maxBetting: number;
-  currentBettingMembers: number;
-  status: "live" | "upcoming";
-}
-
-// Sample data - In a real app, this would come from an API or database
-const matchesData: MatchData[] = [
-  {
-    id: "m1",
-    sport: "cricket",
-    teams: {
-      home: {
-        name: "Mumbai Indians",
-        logo: "/cricket/mumbai.jpg",
-        odds: 1.75,
-      },
-      away: {
-        name: "Chennai Super Kings",
-        logo: "/cricket/chennai.jpg",
-        odds: 2.1,
-      },
-    },
-    startTime: "2025-02-18T14:30:00",
-    maxBetting: 100,
-    currentBettingMembers: 2,
-    status: "live",
-  },
-  {
-    id: "m2",
-    sport: "football",
-    teams: {
-      home: {
-        name: "Real Madrid",
-        logo: "/football/madrid.jpg",
-        odds: 1.6,
-      },
-      away: {
-        name: "Barcelona",
-        logo: "/football/barcelona.jpg",
-        odds: 2.3,
-      },
-    },
-    startTime: "2025-02-18T18:45:00",
-    maxBetting: 100,
-    currentBettingMembers: 2,
-    status: "live",
-  },
-  {
-    id: "m3",
-    sport: "baseball",
-    teams: {
-      home: {
-        name: "NY Yankees",
-        logo: "/baseball/yankees.jpg",
-        odds: 1.9,
-      },
-      away: {
-        name: "Boston Red Sox",
-        logo: "/baseball/redsox.jpg",
-        odds: 1.85,
-      },
-    },
-    startTime: "2025-02-18T17:00:00",
-    maxBetting: 100,
-    currentBettingMembers: 2,
-    status: "live",
-  },
-  {
-    id: "m4",
-    sport: "cricket",
-    teams: {
-      home: {
-        name: "Delhi Capitals",
-        logo: "/cricket/delhi.jpg",
-        odds: 2.05,
-      },
-      away: {
-        name: "Rajasthan Royals",
-        logo: "/cricket/rajasthan.jpg",
-        odds: 1.8,
-      },
-    },
-    startTime: "2025-02-18T20:00:00",
-    maxBetting: 100,
-    currentBettingMembers: 2,
-    status: "upcoming",
-  },
-];
-
-// Page Props Type
 interface PageProps {
   params: {
     matchId: string;
   };
 }
 
-// Metadata generation
-// export async function generateMetadata({ params }: PageProps) {
-//   const match = matchesData.find((m) => m.id === params.matchId);
+interface Team {
+  name: string;
+  logo: string;
+  odds: number;
+}
 
-//   if (!match) {
-//     return {
-//       title: "Match Not Found",
-//     };
-//   }
+interface UserBet {
+  address: string;
+  team: "home" | "away"; // The team the user is betting on
+  bettingAmount: number; // The amount the user is betting
+}
 
-//   return {
-//     title: `${match.teams.home.name} vs ${match.teams.away.name} - Betting`,
-//     description: `Place your bets on the ${match.sport} match between ${match.teams.home.name} and ${match.teams.away.name}`,
-//   };
-// }
+interface Match {
+  id: string;
+  sport: "cricket" | "football" | "baseball";
+  teams: {
+    home: Team;
+    away: Team;
+  };
+  startTime: string;
+  status: "live" | "upcoming";
+  maxBetting: number;
+  currentBettingMembers: number;
+  users: UserBet[];
+  score: { home: number; away: number }; // Array of users and their betting details
+}
 
-// Main Page Component
 export default function BettingPage({ params }: PageProps) {
-  const match = matchesData.find((m) => m.id === params.matchId);
+  const [match, setMatch] = useState(null);
+
+  useEffect(() => {
+    // Connect to the WebSocket server
+    const ws = new WebSocket("ws://localhost:3001");
+
+    ws.onopen = () => {
+      console.log("Connected to WebSocket server");
+    };
+
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+
+      if (message.type === "INITIAL_DATA") {
+        // Find the specific match from the initial data
+        const foundMatch = message.data.find((m: Match) => m.id === params.matchId);
+        if (foundMatch) {
+          setMatch(foundMatch);
+        } else {
+          notFound(); // Show 404 if the match is not found
+        }
+      } else if (message.type === "MATCH_UPDATE" && message.data.id === params.matchId) {
+        // Update the match data if it matches the current matchId
+        setMatch(message.data);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log("WebSocket connection closed");
+    };
+
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    // Cleanup WebSocket connection on unmount
+    return () => {
+      ws.close();
+    };
+  }, [params.matchId]); // Re-run effect if matchId changes
 
   if (!match) {
-    notFound();
+    return <div>Loading...</div>; // Show loading state while waiting for data
   }
 
   return (

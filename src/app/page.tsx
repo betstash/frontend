@@ -1,22 +1,22 @@
 "use client";
 
 // import { AccountInfo } from "@/components/AccountInfo";
-import { Header } from "@/components/Header";
+// import { Header } from "@/components/Header";
 import { Icons } from "@/components/Icons";
 // import { MessageBoard } from "@/components/MessageBoard";
 // import { NetworkInfo } from "@/components/NetworkInfo";
-import { TopBanner } from "@/components/TopBanner";
+// import { TopBanner } from "@/components/TopBanner";
 import { Button } from "@/components/ui/button";
 // import { TransferAPT } from "@/components/TransferAPT";
 // import { WalletDetails } from "@/components/WalletDetails";
 // Internal Components
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { WalletSelector } from "@/components/WalletSelector";
+// import { WalletSelector } from "@/components/WalletSelector";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
-import { Badge, Bell, ChevronRight, CreditCard, DollarSign, Gamepad2, Menu, Trophy, User } from "lucide-react";
+import { ChevronRight, CreditCard, DollarSign, Gamepad2, Trophy } from "lucide-react";
 import Head from "next/head";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -33,6 +33,12 @@ interface Team {
   odds: number;
 }
 
+interface UserBet {
+  address: string;
+  team: "home" | "away"; // The team the user is betting on
+  bettingAmount: number; // The amount the user is betting
+}
+
 interface Match {
   id: string;
   sport: "cricket" | "football" | "baseball";
@@ -44,123 +50,141 @@ interface Match {
   status: "live" | "upcoming";
   maxBetting: number;
   currentBettingMembers: number;
+  users: UserBet[];
+  score: { home: number; away: number }; // Array of users and their betting details
 }
 
 // Mock data
-const ongoingMatches: Match[] = [
-  {
-    id: "m1",
-    sport: "cricket",
-    teams: {
-      home: {
-        name: "Mumbai Indians",
-        logo: "/cricket/mumbai.jpg",
-        odds: 1.75,
-      },
-      away: {
-        name: "Chennai Super Kings",
-        logo: "/cricket/chennai.jpg",
-        odds: 2.1,
-      },
-    },
-    startTime: "2025-02-18T14:30:00",
-    maxBetting: 100,
-    currentBettingMembers: 2,
-    status: "live",
-  },
-  {
-    id: "m2",
-    sport: "football",
-    teams: {
-      home: {
-        name: "Real Madrid",
-        logo: "/football/madrid.jpg",
-        odds: 1.6,
-      },
-      away: {
-        name: "Barcelona",
-        logo: "/football/barcelona.jpg",
-        odds: 2.3,
-      },
-    },
-    startTime: "2025-02-18T18:45:00",
-    maxBetting: 100,
-    currentBettingMembers: 2,
-    status: "live",
-  },
-  {
-    id: "m3",
-    sport: "baseball",
-    teams: {
-      home: {
-        name: "NY Yankees",
-        logo: "/baseball/yankees.jpg",
-        odds: 1.9,
-      },
-      away: {
-        name: "Boston Red Sox",
-        logo: "/baseball/redsox.jpg",
-        odds: 1.85,
-      },
-    },
-    startTime: "2025-02-18T17:00:00",
-    maxBetting: 100,
-    currentBettingMembers: 2,
-    status: "live",
-  },
-  {
-    id: "m4",
-    sport: "cricket",
-    teams: {
-      home: {
-        name: "Delhi Capitals",
-        logo: "/cricket/delhi.jpg",
-        odds: 2.05,
-      },
-      away: {
-        name: "Rajasthan Royals",
-        logo: "/cricket/rajasthan.jpg",
-        odds: 1.8,
-      },
-    },
-    startTime: "2025-02-18T20:00:00",
-    maxBetting: 100,
-    currentBettingMembers: 2,
-    status: "upcoming",
-  },
-];
+// const ongoingMatches: Match[] = [
+//   {
+//     id: "m1",
+//     sport: "cricket",
+//     teams: {
+//       home: {
+//         name: "Mumbai Indians",
+//         logo: "/cricket/mumbai.jpg",
+//         odds: 1.75,
+//       },
+//       away: {
+//         name: "Chennai Super Kings",
+//         logo: "/cricket/chennai.jpg",
+//         odds: 2.1,
+//       },
+//     },
+//     startTime: "2025-02-18T14:30:00",
+//     maxBetting: 100,
+//     currentBettingMembers: 2,
+//     status: "live",
+//     users: [],
+//   },
+//   {
+//     id: "m2",
+//     sport: "football",
+//     teams: {
+//       home: {
+//         name: "Real Madrid",
+//         logo: "/football/madrid.jpg",
+//         odds: 1.6,
+//       },
+//       away: {
+//         name: "Barcelona",
+//         logo: "/football/barcelona.jpg",
+//         odds: 2.3,
+//       },
+//     },
+//     startTime: "2025-02-18T18:45:00",
+//     maxBetting: 100,
+//     currentBettingMembers: 2,
+//     status: "live",
+//     users: [],
+//   },
+//   {
+//     id: "m3",
+//     sport: "baseball",
+//     teams: {
+//       home: {
+//         name: "NY Yankees",
+//         logo: "/baseball/yankees.jpg",
+//         odds: 1.9,
+//       },
+//       away: {
+//         name: "Boston Red Sox",
+//         logo: "/baseball/redsox.jpg",
+//         odds: 1.85,
+//       },
+//     },
+//     startTime: "2025-02-18T17:00:00",
+//     maxBetting: 100,
+//     currentBettingMembers: 2,
+//     status: "live",
+//     users: [],
+//   },
+//   {
+//     id: "m4",
+//     sport: "cricket",
+//     teams: {
+//       home: {
+//         name: "Delhi Capitals",
+//         logo: "/cricket/delhi.jpg",
+//         odds: 2.05,
+//       },
+//       away: {
+//         name: "Rajasthan Royals",
+//         logo: "/cricket/rajasthan.jpg",
+//         odds: 1.8,
+//       },
+//     },
+//     startTime: "2025-02-18T20:00:00",
+//     maxBetting: 100,
+//     currentBettingMembers: 2,
+//     status: "upcoming",
+//     users: [],
+//   },
+// ];
 
 function App() {
   const { connected } = useWallet();
   const [activeTab, setActiveTab] = useState("all");
 
-  // const [ongoingMatches, setOngoingMatches] = useState<Match[]>([]);
+  const [ongoingMatches, setOngoingMatches] = useState<Match[]>([]);
 
-  // useEffect(() => {
-  //   const ws = new WebSocket("ws://localhost:3001");
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:3001");
 
-  //   ws.onopen = () => {
-  //     console.log("Connected to WebSocket server");
-  //   };
+    ws.onopen = () => {
+      console.log("Connected to WebSocket server");
+    };
 
-  //   ws.onmessage = (event) => {
-  //     const updatedMatch = JSON.parse(event.data);
-  //     setOngoingMatches((prevMatches) => {
-  //       const matchExists = prevMatches.find((match) => match.id === updatedMatch.id);
-  //       return matchExists
-  //         ? prevMatches.map((match) => (match.id === updatedMatch.id ? updatedMatch : match))
-  //         : [...prevMatches, updatedMatch];
-  //     });
-  //   };
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
 
-  //   ws.onclose = () => {
-  //     console.log("WebSocket connection closed");
-  //   };
+      if (message.type === "INITIAL_DATA") {
+        // Set the initial matches array
+        setOngoingMatches(message.data);
+      } else if (message.type === "MATCH_UPDATE") {
+        // Update a specific match
+        const updatedMatch = message.data;
+        setOngoingMatches((prevMatches) => {
+          const matchExists = prevMatches.find((match) => match.id === updatedMatch.id);
+          return matchExists
+            ? prevMatches.map((match) => (match.id === updatedMatch.id ? updatedMatch : match))
+            : [...prevMatches, updatedMatch];
+        });
+      }
+    };
 
-  //   return () => {
-  //     ws.close();
-  //   };
-  // }, []);
+    ws.onclose = () => {
+      console.log("WebSocket connection closed");
+    };
+
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []);
 
   return (
     <>
@@ -269,7 +293,12 @@ function App() {
                                     </Avatar>
                                     <div>
                                       <p className="font-medium">{match.teams[teamType].name}</p>
-                                      <p className="text-sm text-gray-400">{teamType === "home" ? "Home" : "Away"}</p>
+                                      <div className="flex gap-6">
+                                        <p className="text-sm text-gray-400">{teamType === "home" ? "Home" : "Away"}</p>
+                                        <p className="text-sm text-gray-400">
+                                          Score : {teamType === "home" ? match.score.home : match.score.away}
+                                        </p>
+                                      </div>
                                     </div>
                                   </div>
                                   <Button variant="outline" size="sm" className="border-gray-700 hover:bg-gray-700">
@@ -345,7 +374,12 @@ function App() {
                                     </Avatar>
                                     <div>
                                       <p className="font-medium">{match.teams[teamType].name}</p>
-                                      <p className="text-sm text-gray-400">{teamType === "home" ? "Home" : "Away"}</p>
+                                      <div className="flex gap-6">
+                                        <p className="text-sm text-gray-400">{teamType === "home" ? "Home" : "Away"}</p>
+                                        <p className="text-sm text-gray-400">
+                                          Score : {teamType === "home" ? match.score.home : match.score.away}
+                                        </p>
+                                      </div>
                                     </div>
                                   </div>
                                   <Button variant="outline" size="sm" className="border-gray-700 hover:bg-gray-700">
